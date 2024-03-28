@@ -13,7 +13,7 @@ import torch.backends.cudnn as cudnn
 from config import config
 from dataloader import get_train_loader
 from network import BiSeNet
-from datasets import Cityscapes
+from datasets import Fire as IDataset
 
 from utils.init_func import init_weight, group_weight
 from utils.pyt_utils import all_reduce_tensor
@@ -42,7 +42,7 @@ with Engine(custom_parser=parser) as engine:
         torch.cuda.manual_seed(seed)
 
     # data loader
-    train_loader, train_sampler = get_train_loader(engine, Cityscapes)
+    train_loader, train_sampler = get_train_loader(engine, IDataset)
 
     # config network and criterion
     min_kept = int(config.batch_size // len(
@@ -53,10 +53,12 @@ with Engine(custom_parser=parser) as engine:
 
     if engine.distributed:
         BatchNorm2d = SyncBatchNorm
+    else:
+        BatchNorm2d = torch.nn.BatchNorm2d
 
     model = BiSeNet(config.num_classes, is_training=True,
                     criterion=criterion,
-                    pretrained_model=config.pretrained_model,
+                    pretrained_model=None,#config.pretrained_model,
                     norm_layer=BatchNorm2d)
     init_weight(model.business_layer, nn.init.kaiming_normal_,
                 BatchNorm2d, config.bn_eps, config.bn_momentum,
@@ -64,8 +66,8 @@ with Engine(custom_parser=parser) as engine:
 
     # group weight and config optimizer
     base_lr = config.lr
-    # if engine.distributed:
-    #     base_lr = config.lr * engine.world_size
+    if engine.distributed:
+         base_lr = config.lr * engine.world_size
 
     params_list = []
     params_list = group_weight(params_list, model.context_path,
@@ -92,7 +94,7 @@ with Engine(custom_parser=parser) as engine:
     total_iteration = config.nepochs * config.niters_per_epoch
     lr_policy = PolyLR(base_lr, config.lr_power, total_iteration)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
     if engine.distributed:
@@ -127,8 +129,9 @@ with Engine(custom_parser=parser) as engine:
 
             # reduce the whole loss over multi-gpu
             if engine.distributed:
-                reduce_loss = all_reduce_tensor(loss,
-                                                world_size=engine.world_size)
+                reduce_loss = all_reduce_tensor(loss, world_size=engine.world_size)
+            else:
+                reduce_loss = loss.item()
 
             current_idx = epoch * config.niters_per_epoch + idx
             lr = lr_policy.get_lr(current_idx)
@@ -143,7 +146,7 @@ with Engine(custom_parser=parser) as engine:
             print_str = 'Epoch{}/{}'.format(epoch, config.nepochs) \
                         + ' Iter{}/{}:'.format(idx + 1, config.niters_per_epoch) \
                         + ' lr=%.2e' % lr \
-                        + ' loss=%.2f' % reduce_loss.item()
+                        + ' loss=%.2f' % reduce_loss
 
             pbar.set_description(print_str, refresh=False)
 

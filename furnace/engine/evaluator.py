@@ -78,7 +78,7 @@ class Evaluator(object):
             models = [os.path.join(model_path,
                                    'epoch-%s.pth' % model_indice), ]
 
-        results = open(log_file, 'a')
+        results = open(log_file, 'w+')
         link_file(log_file, log_file_link)
 
         for model in models:

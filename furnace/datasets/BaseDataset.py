@@ -13,6 +13,15 @@ import numpy as np
 
 import torch.utils.data as data
 
+def maximum_filter(n,img):
+    size = (n,n)
+    shape = cv2.MORPH_RECT
+    kernel = cv2.getStructuringElement(shape,size)
+
+    img_result = cv2.dilate(img,kernel)
+    img_result = cv2.erode(img_result,kernel)
+    return img_result
+
 
 class BaseDataset(data.Dataset):
     def __init__(self, setting, split_name, preprocess=None,
@@ -45,6 +54,8 @@ class BaseDataset(data.Dataset):
         img = img[:, :, ::-1]
         if self.preprocess is not None:
             img, gt, extra_dict = self.preprocess(img, gt)
+
+
 
         if self._split_name is 'train':
             img = torch.from_numpy(np.ascontiguousarray(img)).float()
@@ -114,8 +125,19 @@ class BaseDataset(data.Dataset):
     def _open_image(filepath, mode=cv2.IMREAD_COLOR, dtype=None):
         # cv2: B G R
         # h w c
-        img = np.array(cv2.imread(filepath, mode), dtype=dtype)
+        img = np.array(cv2.imread(filepath,mode),dtype=dtype)
+        #if mode == cv2.IMREAD_COLOR:
+         #   temp = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+          #  mask = temp[:, :, 1]
+          #  _, thr = cv2.threshold(mask, 150, 255, cv2.THRESH_BINARY)
+          #  bb = cv2.medianBlur(thr, 5)
+          #  zz = cv2.cvtColor(bb, cv2.COLOR_GRAY2BGR)
+          #  mask_contours_enhanced = maximum_filter(5, zz)
 
+           # img = np.concatenate((img,mask_contours_enhanced),axis=2)
+            #img = np.concatenate((img, temp), axis=2)
+
+            #img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         return img
 
     @classmethod

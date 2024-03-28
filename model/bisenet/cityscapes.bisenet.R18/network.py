@@ -170,4 +170,3 @@ class BiSeNetHead(nn.Module):
 
 if __name__ == "__main__":
     model = BiSeNet(19, None)
-    # print(model)

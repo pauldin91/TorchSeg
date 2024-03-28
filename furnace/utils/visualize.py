@@ -2,6 +2,10 @@ import numpy as np
 import cv2
 import scipy.io as sio
 
+from numpy.linalg import norm
+
+def normalize(a,b):
+    return norm(a-b)/(max(norm(a),norm(b))+0.001)
 
 def set_img_color(colors, background, img, gt, show255=False):
     for i in range(1, len(colors)):
@@ -33,7 +37,7 @@ def show_img(colors, background, img, clean, gt, *pds):
         final = np.column_stack((final, im))
 
     im = np.array(img, np.uint8)
-    set_img_color(colors, background, im, gt, True)
+    set_img_color(colors, background, im, gt,True)
     final = np.column_stack((final, pivot))
     final = np.column_stack((final, im))
     return final
@@ -56,8 +60,7 @@ def get_ade_colors():
     return colors
 
 
-def print_iou(iu, mean_pixel_acc, class_names=None, show_no_back=False,
-              no_print=False):
+def print_iou(iu, mean_pixel_acc,area,area_norm,no_fires,no_fires_norm,no_fires_arr,deviation,deviation_norm, class_names=None, show_no_back=False,no_print=False):
     n = iu.size
     lines = []
     for i in range(n):
@@ -70,16 +73,19 @@ def print_iou(iu, mean_pixel_acc, class_names=None, show_no_back=False,
     mean_IU_no_back = np.nanmean(iu[1:])
     if show_no_back:
         lines.append(
-            '----------------------------     %-8s\t%.3f%%\t%-8s\t%.3f%%\t%-8s\t%.3f%%' % (
+            '%-8s\t%.3f%%\t%-8s\t%.3f%%\t%-8s\t%.3f%%\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f' % (
                 'mean_IU', mean_IU * 100, 'mean_IU_no_back',
                 mean_IU_no_back * 100,
-                'mean_pixel_ACC', mean_pixel_acc * 100))
+                'mean_pixel_ACC', mean_pixel_acc * 100,'area',area,'no_fires',no_fires,'deviation',deviation,'no_fires_actual',no_fires_arr[0],'no_fires_pred',no_fires_arr[1],
+                'area_norm',area_norm,'no_fires_norm',no_fires_norm,'deviation_norm',deviation_norm
+            ))
     else:
         print(mean_pixel_acc)
         lines.append(
-            '----------------------------     %-8s\t%.3f%%\t%-8s\t%.3f%%' % (
+            '%-8s\t%.3f%%\t%-8s\t%.3f%%\t%-8s\t%.3f%%\t%-8s\t%.3f%%\t%-8s\t%.3f%%\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f\t%-8s\t%.3f' % (
                 'mean_IU', mean_IU * 100, 'mean_pixel_ACC',
-                mean_pixel_acc * 100))
+                mean_pixel_acc * 100,'area',area,'no_fires',no_fires,'deviation',deviation,'no_fires_actual',no_fires_arr[0],'no_fires_pred',no_fires_arr[1],
+                'area_norm',area_norm,'no_fires_norm',no_fires_norm,'deviation_norm',deviation_norm))
     line = "\n".join(lines)
     if not no_print:
         print(line)
