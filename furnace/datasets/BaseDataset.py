@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-# @Time    : 2017/12/16 下午8:41
+# @Time    : 2017/12/16 ??8:41
 # @Author  : yuchangqian
 # @Contact : changqian_yu@163.com
 # @File    : BaseDataset.py
@@ -10,7 +10,7 @@ import time
 import cv2
 import torch
 import numpy as np
-
+from base_config.base_config import base_config
 import torch.utils.data as data
 
 def maximum_filter(n,img):
@@ -125,19 +125,19 @@ class BaseDataset(data.Dataset):
     def _open_image(filepath, mode=cv2.IMREAD_COLOR, dtype=None):
         # cv2: B G R
         # h w c
-        img = np.array(cv2.imread(filepath,mode),dtype=dtype)
-        #if mode == cv2.IMREAD_COLOR:
-         #   temp = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-          #  mask = temp[:, :, 1]
-          #  _, thr = cv2.threshold(mask, 150, 255, cv2.THRESH_BINARY)
-          #  bb = cv2.medianBlur(thr, 5)
-          #  zz = cv2.cvtColor(bb, cv2.COLOR_GRAY2BGR)
-          #  mask_contours_enhanced = maximum_filter(5, zz)
+        img = np.array(cv2.imread(filepath, mode), dtype=dtype)
+        if mode == cv2.IMREAD_COLOR:
+            temp = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+            if base_config.channels == 'rgb+hsv':
+                img = np.concatenate((img, temp), axis=2)
+            elif base_config.channels == 'rgb+contours':
+                mask = temp[:, :, 1]
+                _, thr = cv2.threshold(mask, 150, 255, cv2.THRESH_BINARY)
+                bb = cv2.medianBlur(thr, 5)
+                zz = cv2.cvtColor(bb, cv2.COLOR_GRAY2BGR)
+                mask_contours_enhanced = maximum_filter(5, zz)
+                img = np.concatenate((img,mask_contours_enhanced),axis=2)
 
-           # img = np.concatenate((img,mask_contours_enhanced),axis=2)
-            #img = np.concatenate((img, temp), axis=2)
-
-            #img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         return img
 
     @classmethod

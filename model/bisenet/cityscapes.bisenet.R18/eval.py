@@ -29,15 +29,6 @@ def find_distance(p1, p2):
     return np.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
 
 
-def similarity(x, y):
-    v = np.dot(x, y) / (norm(x) * norm(y))
-    return v
-
-
-def fire_angle(b):
-    return np.arctan((b[0] + b[3]) * 1.0 / (b[1] + b[2] + 1e-8)) * 180 / np.pi
-
-
 def maximum_filter(n, img):
     # Creates the shape of the kernel
     size = (n, n)
@@ -63,23 +54,6 @@ def distances(centers):
     return distance
 
 import cv2
-
-def cosine_similarity(mask,pred):
-    mask = np.sort(mask,axis=0)
-    pred = np.sort(pred,axis=0)
-    if mask.shape[1] > 1:
-        mm = np.concatenate(mask).ravel()
-    else:
-        mask.ravel()
-    if pred.shape[1] > 1:
-        pp = np.concatenate(pred).ravel()
-    else:
-        pp=pred.ravel()
-    mlength = max(len(mm),len(pp))
-    mm = np.pad(mm,((0, mlength - mm.shape[0])), mode='constant')
-    pp = np.pad(pp,((0, mlength - pp.shape[0])), mode='constant')
-    v = np.dot(mm,pp)/(norm(mm)*norm(pp))
-    return v
 
 def extract_metrics(mat):
     mat = np.asarray(mat,dtype='uint8')
@@ -136,8 +110,8 @@ class SegEvaluator(Evaluator):
 
         area_k_mean = k.mean()
 
-        area = normalize(area_l_mean,area_k_mean)
-        deviation = normalize(r,o)
+        area = np.abs(area_l_mean-area_k_mean)/np.abs(area_k_mean+0.01)
+        deviation = normalize(r,o)/config.image_width
         no_fires = np.abs(q-n)
         area_norm = normalize_percent(area_l_mean,area_k_mean)
         deviation_norm = normalize_percent(r, o)
@@ -213,14 +187,14 @@ class SegEvaluator(Evaluator):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--epochs', default='last', type=str)
-    parser.add_argument('-d', '--devices', default='1', type=str)
+    parser.add_argument('-d', '--devices', default='0', type=str)
     parser.add_argument('-v', '--verbose', default=False, action='store_true')
     parser.add_argument('--show_image', '-s', default=False,action='store_true')
-    parser.add_argument('--save_path', '-p', default='~/Evaluations/Bis/Fire')
+    parser.add_argument('--save_path', '-p', default=None)
 
     args = parser.parse_args()
-    all_dev = parse_devices(args.devices)
-
+    all_dev = [0]#parse_devices(args.devices)
+    print(all_dev[0])
     network = BiSeNet(config.num_classes, is_training=False,criterion=None)
     data_setting = {'img_root': config.img_root_folder,
                     'gt_root': config.gt_root_folder,

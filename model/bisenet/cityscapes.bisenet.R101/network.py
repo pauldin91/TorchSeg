@@ -7,6 +7,7 @@ from torch.utils.checkpoint import checkpoint
 # from torchvision.models import resnet50, resnet101, resnet152
 
 from config import config
+from base_config.base_config import base_config
 from base_model import resnet101
 from seg_opr.seg_oprs import ConvBnRelu, AttentionRefinement, FeatureFusion
 
@@ -28,7 +29,11 @@ class BiSeNet(nn.Module):
         self.business_layer = []
         self.is_training = is_training
 
-        self.spatial_path = SpatialPath(3, 128, norm_layer)
+        if base_config.channels=='rgb':
+            channels = 3
+        else:
+            channels = 6
+        self.spatial_path = SpatialPath(channels, 128, norm_layer)
 
         conv_channel = 128
         self.global_context = nn.Sequential(

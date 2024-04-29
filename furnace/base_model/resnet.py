@@ -1,6 +1,6 @@
 import functools
 import torch.nn as nn
-
+from base_config.base_config import base_config
 from utils.pyt_utils import load_model
 
 
@@ -107,9 +107,15 @@ class ResNet(nn.Module):
                  bn_momentum=0.1, deep_stem=False, stem_width=32, inplace=True):
         self.inplanes = stem_width * 2 if deep_stem else 64
         super(ResNet, self).__init__()
+
+        if base_config.channels == 'rgb':
+            channels = 3
+        else:
+            channels = 6
+
         if deep_stem:
             self.conv1 = nn.Sequential(
-                nn.Conv2d(3, stem_width, kernel_size=3, stride=2, padding=1,
+                nn.Conv2d(channels, stem_width, kernel_size=3, stride=2, padding=1,
                           bias=False),
                 norm_layer(stem_width, eps=bn_eps, momentum=bn_momentum),
                 nn.ReLU(inplace=inplace),
@@ -123,7 +129,7 @@ class ResNet(nn.Module):
                           bias=False),
             )
         else:
-            self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+            self.conv1 = nn.Conv2d(channels, 64, kernel_size=7, stride=2, padding=3,
                                    bias=False)
 
         self.bn1 = norm_layer(stem_width * 2 if deep_stem else 64, eps=bn_eps,
